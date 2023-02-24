@@ -286,6 +286,10 @@
 #include <libproc.h>
 #endif
 
+#ifdef __vita__
+long sysconf(int name){return 0;}
+#endif
+
 SDL_Renderer* g_renderer;
 SDL_Window*   g_window;
 SDL_Texture*  g_windowTexture;
@@ -640,6 +644,8 @@ void Initialize(void)
 	}
 
 	snprintf(candyCrisisResources, sizeof(candyCrisisResources), "%s/Resources/", pathbuf);
+#elif defined(__vita__)
+	snprintf(candyCrisisResources, sizeof(candyCrisisResources), "ux0:data/CandyCrisisResources/");
 #else
 	snprintf(candyCrisisResources, sizeof(candyCrisisResources), "CandyCrisisResources/");
 #endif

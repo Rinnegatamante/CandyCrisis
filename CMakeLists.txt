@@ -6,6 +6,14 @@ else()
 	cmake_minimum_required(VERSION 3.16)
 endif()
 
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND VITA)
+  if(DEFINED ENV{VITASDK})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "toolchain file")
+  else()
+    message(FATAL_ERROR "Please define VITASDK to point to your SDK path!")
+  endif()
+endif()
+
 set(GAME_TARGET "CandyCrisis")
 set(GAME_FRIENDLY_NAME "Candy Crisis")
 set(GAME_BUNDLE_ID "io.jor.candycrisis")
@@ -47,7 +55,7 @@ set(GAME_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 #------------------------------------------------------------------------------
 # FIND SDL
 #------------------------------------------------------------------------------
-
+if (NOT VITA)
 # If SDL2_DIR wasn't specified, discover if the user put some prebuilt SDL2 package in the project's root directory
 if(NOT DEFINED SDL2_DIR)
 	if(APPLE)
@@ -80,7 +88,7 @@ else()
 	message("Building SDL from source: " ${SDL2_DIR})
 	add_subdirectory("${SDL2_DIR}" EXCLUDE_FROM_ALL)
 endif()
-
+endif()
 #------------------------------------------------------------------------------
 # GENERATED FILES
 #------------------------------------------------------------------------------
@@ -173,6 +181,12 @@ add_compile_definitions(
 	"$<$<CONFIG:DEBUG>:_DEBUG>"
 )
 
+if (VITA)
+	target_compile_options(${GAME_TARGET} PRIVATE
+		-I${VITASDK}/arm-vita-eabi/include/SDL2
+	)
+endif()
+
 if(NOT MSVC)
 	target_compile_options(${GAME_TARGET} PRIVATE
 		-Wall
@@ -223,6 +237,7 @@ endif()
 #------------------------------------------------------------------------------
 
 # Explicitly link math lib on Linux
+if (NOT VITA)
 if(NOT APPLE AND NOT WIN32)
 	target_link_libraries(${GAME_TARGET} PRIVATE m)
 endif()
@@ -238,11 +253,44 @@ if(NOT STATIC_SDL)
 else()
 	target_link_libraries(${GAME_TARGET} PRIVATE SDL2::SDL2-static)
 endif()
+endif()
+
+if(VITA)
+    target_link_libraries(${GAME_TARGET}
+        PRIVATE
+        SDL2
+        vorbisfile
+        vorbis
+        ogg
+        mpg123
+        FLAC
+        mikmod
+        SceKernelDmacMgr_stub
+        SceShaccCg_stub
+        SceAudioIn_stub
+        SceAppMgr_stub
+        SceIme_stub_weak
+        SceMotion_stub
+        SceCommonDialog_stub
+        SceHid_stub
+        SceGxm_stub
+        SceAudio_stub
+        ScePower_stub
+        SceDisplay_stub
+        SceCtrl_stub
+        SceTouch_stub
+        SceIofilemgr_stub
+        SceVshBridge_stub
+        SceSysmodule_stub
+        m
+        pthread
+    )
+endif()
 
 #------------------------------------------------------------------------------
 # COPY ASSETS
 #------------------------------------------------------------------------------
-
+if (NOT VITA)
 if(APPLE)
 	set(GAME_DATA_TARGET_LOCATION "$<TARGET_FILE_DIR:${GAME_TARGET}>/../Resources")
 else()
@@ -257,7 +305,24 @@ if(WIN32)
 	add_custom_command(TARGET ${GAME_TARGET} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${GAME_TARGET}> $<TARGET_FILE_DIR:${GAME_TARGET}>)
 endif()
+endif()
 
+if(VITA)
+    include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
+    set(VITA_APP_NAME "Candy Crisis")
+    set(VITA_TITLEID  "CANDYCRIS")
+    set(VITA_VERSION  "01.00")
+    set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12")
+    vita_create_self(candy.self ${GAME_TARGET} UNSAFE)
+    vita_create_vpk(candy.vpk ${VITA_TITLEID} candy.self
+        VERSION ${VITA_VERSION}
+        NAME ${VITA_APP_NAME}
+        FILE ${CMAKE_SOURCE_DIR}/livearea/icon0.png sce_sys/icon0.png
+             ${CMAKE_SOURCE_DIR}/livearea/bg.png sce_sys/livearea/contents/bg.png
+             ${CMAKE_SOURCE_DIR}/livearea/startup.png sce_sys/livearea/contents/startup.png
+             ${CMAKE_SOURCE_DIR}/livearea/template.xml sce_sys/livearea/contents/template.xml
+    )
+endif()
 #------------------------------------------------------------------------------
 # INSTALL
 #------------------------------------------------------------------------------
