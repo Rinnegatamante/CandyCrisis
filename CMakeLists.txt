@@ -256,32 +256,45 @@ endif()
 endif()
 
 if(VITA)
+    enable_language(CXX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(sdl2 REQUIRED sdl2)
+    set_target_properties(${GAME_TARGET} PROPERTIES LINKER_LANGUAGE CXX)
+    target_include_directories(${GAME_TARGET} PRIVATE ${sdl2_INCLUDE_DIRS})
     target_link_libraries(${GAME_TARGET}
         PRIVATE
         SDL2
+        vitaGL
+        vitashark
+        SceShaccCgExt
+        taihen_stub
+        mathneon
         vorbisfile
         vorbis
         ogg
         mpg123
         FLAC
         mikmod
-        SceKernelDmacMgr_stub
         SceShaccCg_stub
-        SceAudioIn_stub
-        SceAppMgr_stub
-        SceIme_stub_weak
-        SceMotion_stub
-        SceCommonDialog_stub
-        SceHid_stub
+        SceKernelDmacMgr_stub
+        SceIme_stub
         SceGxm_stub
-        SceAudio_stub
-        ScePower_stub
         SceDisplay_stub
         SceCtrl_stub
-        SceTouch_stub
-        SceIofilemgr_stub
-        SceVshBridge_stub
+        SceAppMgr_stub
+        SceAppUtil_stub
+        SceAudio_stub
+        SceAudioIn_stub
         SceSysmodule_stub
+        SceIofilemgr_stub
+        SceCommonDialog_stub
+        SceTouch_stub
+        SceHid_stub
+        SceMotion_stub
+        ScePower_stub
+        SceProcessmgr_stub
+        SceIme_stub_weak
+        SceVshBridge_stub
         m
         pthread
     )
